@@ -1,53 +1,25 @@
 <script>
 import InsidePage from './InsidePage.vue';
 import StatisticsPage from'./StatisticsPage.vue'
+import { mapState,mapActions } from 'pinia';
+import indexState from '../stores/indexState'
+
 
 export default{
     components:{
         InsidePage,
         StatisticsPage,
     },
-    mounted(state){
-        const startDate = document.getElementById('startDate')
-        const currentDate = new Date();//今天年月日
-        //long:以完整名稱顯示
-        //numeric:以數字型態顯示
-        /////////////////////////////////////////////////////////////////////////////////////////此為mdn方法不是我們要的格式
-        const day = {day: 'numeric'};
-        const year = {year: 'numeric'};
-        const month = {month: 'long'};
-        // const weekday = {weekdat: 'long'};
-        // const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        // console.log(currentDate.toLocaleDateString(undefined, options));
-        //2023年10月26號 星期四
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //拆分成年月日三個變數
-        //.padStart (指定字串最小長度,”不夠長的部分要用來填滿的內容”)用於出現單位數的日期或月份的時候顯07 or 02
-        ////由於得到的是x日x月x年，所以需刪除中文
-        ///slice(Start,end)  ，end為負數則表示從數組最末端開始
-        const today = currentDate.toLocaleString(undefined,day).slice(0,-1).padStart(2,"0");
-        const tomonth = currentDate.toLocaleString(undefined, month).slice(0,-1).padStart(2,"0");
-        const toyear = currentDate.toLocaleString(undefined,year).slice(0,-1).padStart(4,"0");
-        const defaultDate = [toyear,tomonth,today].join('-');
-        //存進startdate
-        startDate.value = defaultDate;
-        /////////////////////////////////////////////////////////////////
-        const endDate =document.getElementById('endDate');
-        var plusDate = new Date().getDate()
-        const sevenDate = new Date().setDate(plusDate+7)
-        const sevenDatetime = new Date(sevenDate)
-        const sevtoday = sevenDatetime.toLocaleString(undefined,day).slice(0,-1).padStart(2,"0");
-        const sevmonth = currentDate.toLocaleString(undefined, month).slice(0,-1).padStart(2,"0");
-        const sevyear = currentDate.toLocaleString(undefined,year).slice(0,-1).padStart(4,"0");
-        const a = [sevyear,sevmonth,sevtoday].join('-');
-        endDate.value = a
+    computed:{
+        ...mapState(indexState,['toDayDate','endDayDate'])
     }
-    
 }
 </script>
 <template>
 <div class="mainArea">
     <h1>列表頁</h1>
+    {{ toDayDate }}
+    {{endDayDate}}
         <div class="searchArea">
             <div class="aa">
                 <div class="input">

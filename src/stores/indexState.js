@@ -31,7 +31,7 @@ export default defineStore('indexState',{
         const finDay = sevenDate.toLocaleString(undefined,state.day).slice(0,-1).padStart(2,"0")
         const finMonth = sevenDate.toLocaleString(undefined,state.month).slice(0,-1).padStart(2,"0")
         const finYear = sevenDate.toLocaleString(undefined,state.year).slice(0,-1).padStart(4,"0")
-        const finAnwser = [finYear,finMonth,finDay].join('-')
+        const endDayDate = [finYear,finMonth,finDay].join('-')
 
         return endDayDate
     }
