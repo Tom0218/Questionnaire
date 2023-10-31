@@ -14,10 +14,6 @@ const router = createRouter({
           component:()=> import('../components/InsidePage.vue')
         },
         {
-          path : 'ListPage',
-          component:()=> import('../components/ListPage.vue')
-        },
-        {
           path : 'MakeSurePage',
           component:()=>import('../components/MakeSurePage.vue')
         },

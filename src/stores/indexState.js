@@ -17,7 +17,6 @@ export default defineStore('indexState',{
         const tomonth = state.currentDate.toLocaleString(undefined, state.month).slice(0,-1).padStart(2,"0");
         const toyear = state.currentDate.toLocaleString(undefined, state.year).slice(0,-1).padStart(4,"0");
         const toDayDate = [toyear,tomonth,today].join('-');
-        console.log(toDayDate);
         return toDayDate
       },
       ////////////////////////////推算七天後區域

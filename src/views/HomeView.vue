@@ -14,12 +14,23 @@ export default{
         
         
     },
+    mounted() {
+        const startDate = document.getElementById('stardDate');///boject
+        console.log(startDate)
+
+    },
 
     data(){
         return{
             page: 1,
         }
     },
+    methods:{
+        print(){
+            const startDate = document.getElementById('stardDate');
+            console.log(startDate)
+        }
+    }
     
 }
 </script>
@@ -30,10 +41,8 @@ export default{
 <RouterLink to="MakeSurePage">MakeSurePage</RouterLink>
 <RouterLink to="StatisticsPage">StatisticsPage</RouterLink>
 
-<div class="mainArea" v-if="page ==1">
+<div class="mainArea">
     <h1>列表頁</h1>
-    {{ toDayDate }}
-    {{ endDayDate }}
         <div class="searchArea">
             <div class="aa">
                 <div class="input">
@@ -41,8 +50,8 @@ export default{
                     <input type="text" id="titlesearch">
                 </div>
                 <div class="date">
-                    <input type="date" name="" id="startDate" >
-                    <input type="date" name="" id="endDate" >
+                    <input type="date" name="" id="startDate" v-model="toDayDate">
+                    <input type="date" name="" id="endDate" v-model="endDayDate">
                     <button type="button">搜尋</button>
                 </div>
             </div>
@@ -90,9 +99,7 @@ export default{
         </div> -->
         <!-- ----------------------------------------list for迴圈實現 -->
 </div> 
-        <div  v-if="page ===2"></div>
-        
-   
+        <button @click="print()">123</button>
 </template>
 
 <style lang="scss" scoped>
