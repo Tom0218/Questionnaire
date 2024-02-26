@@ -21,7 +21,6 @@ export default{
 
     methods:{
 
-
          //分頁
         setPage(page) {
             if(page <= 0 || page > this.totalPage) {
@@ -63,10 +62,10 @@ export default{
                     console.log("QuestionnaireList", this.QuestionnaireList)
                 })
             },
-        },
         //後台
         GoBackstage(){
-            this.$router.push();
+            this.$router.push('/BackView');
+        },
         },
 
     mounted() {
@@ -103,22 +102,22 @@ export default{
         <div class="Header">
             <div class="User">
                 <label for="">User : &nbsp xxx</label>
-                <button @click="GoBackstage">後台</button>
                 <button>登入</button>
+                <button @click="GoBackstage">後台</button>
             </div>
         </div>
         <!-- 搜尋 -->
         <div class="Search">
             <div class="Input">
-                <div>
+                <div class="box">
                     <label>搜尋問卷 :&nbsp</label>
                     <input type="text" v-model="qnTitle">
                 </div>
-                <div>
+                <div class="box">
                     <label for="">開始時間 :&nbsp</label>
                     <input type="date" v-model="startDate">
                 </div>
-                <div>
+                <div class="box">
                     <label for="">結束時間 :&nbsp</label>
                     <input type="date" v-model="endDate">
                 </div>
@@ -192,6 +191,7 @@ export default{
         height: 10%;
         width: 100%;
         position: relative;
+        margin-bottom: 2%;
         
         .User{
             background: var(--primary-color);
@@ -221,14 +221,18 @@ export default{
 
     .Search{
         display: flex;
-        width: 50%;
+        width: 60%;
         height: 20%;
-        overflow: hidden; 
+        overflow: hidden;
+     
         .Input{
-            width: 60%;
+            width: 50%;
             display: flex;
             justify-content: space-between;
             flex-direction: column;
+            border-radius: 10px;
+            background: var(--third-color); 
+            padding: 2%;
 
             label{
                 font-weight: bold;
@@ -239,6 +243,11 @@ export default{
                 width: 70%;
                 padding: 0 3%;
                 }
+            
+            .box{
+                display: flex;
+                justify-content: center;
+                } 
             
             }
         .Button{
