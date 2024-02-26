@@ -21,14 +21,16 @@ export default{
             optionType:"",//新問題題型
             necessary:false,//是否必填(預設false)
             questionOption:"",//選項
-            questionList:"",//陣列(問題 + 選項)
+            questionList:[],//陣列(問題 + 選項)
             published:false,//新問卷是否發布
+            quId:0,
 
-            /////編輯、d刪除問卷/////
+            /////編輯、刪除問卷/////
             selectedIndexes:[],
             selectedQuIds : [],
             delQuList : [],
-            
+            EditAndSaveBtn:"新增", 
+            qnId:0,           
             /////分頁/////
             page:1, //分頁條件
             currentPage: 1, 
@@ -39,7 +41,266 @@ export default{
         }
     },
     methods:{
+        //儲存(不發布)
+        save(){
+            console.log("questionnaire:",this.questionnaire)
+            var questionList = this.questionList;
+            console.log("qnId:",this.qnId)
+            //update not publish
+            if( this.qnId > 0){
+                var url = "http://localhost:8081/api/quiz/update";
+                var Qn = {
+                "questionnaire": {
+                    "id":parseInt(this.questionnaire[0].qnId),
+                    "title": this.questionnaire[0].title,
+                    "description":this.questionnaire[0].description,
+                    "published":false,
+                    "startDate": this.questionnaire[0].startDate,
+                    "endDate": this.questionnaire[0].endDate
+                },
+                "question_list": [],
+                "deleteQuestionList":[],
 
+                };
+                for (let i = 0; i < questionList.length; i++) {
+                    Qn.question_list.push({
+                        "quId": questionList[i].quId,
+                        "qnId":parseInt(this.questionnaire[0].qnId),
+                        "qTitle": questionList[i].qTitle,
+                        "optionType": questionList[i].optionType,
+                        "isnecessary": questionList[i].necessary,
+                        "option": questionList[i].option
+                    })
+                };
+
+                if(this.delQuList !=""){
+                    for(let i = 0; i < this.delQuList.length; i++){
+                        Qn.deleteQuestionList.push({
+                            "qnId":parseInt(this.qnId),
+                            "quId":this.deleQuIds[i],
+                        })
+                    };
+                }
+                console.log(Qn)
+
+                fetch(url, {
+                method: "POST",
+                body: JSON.stringify(Qn),
+                headers: new Headers({
+                "Content-Type": "application/json",
+                }),
+                })
+                .then((res) => res.json())
+                .then((response) => {
+                    console.log(response);
+                    alert(response.rtncode)
+                    this.popup = 0;
+                    this.qnId = 0;
+                })
+                .catch((error) => console.error("Error:", error));
+                return;
+            };
+
+            //create not publish
+            var url = "http://localhost:8081/api/quiz/create";
+            
+            var Qn = {
+            "questionnaire": {
+                "title": this.questionnaire[0].title,
+                "description":this.questionnaire[0].description,
+                "published":false,
+                "startDate": this.questionnaire[0].startDate,
+                "endDate": this.questionnaire[0].endDate
+            },
+
+            "question_list": []
+            };   
+                
+            for (let i = 0; i < this.questionList.length; i++) {
+                Qn.question_list.push({
+                "quId": questionList[i].quId,
+                "qTitle": questionList[i].qTitle,
+                "optionType": questionList[i].optionType,
+                "necessary": questionList[i].necessary,
+                "option": questionList[i].option
+                });
+            }
+            console.log(Qn)
+            fetch(url, {
+                method: "POST",
+                body: JSON.stringify(Qn),
+                headers: new Headers({
+                "Content-Type": "application/json",
+                }),
+            })
+            .then((res) => res.json())
+            .then((response) => {
+                console.log(response);
+                alert(response.rtncode)
+                this.popup = 0;
+                this.qnId = 0;
+            })
+            .catch((error) => console.error("Error:", error));
+            },
+
+        //新增或編輯問題
+        addOREditQuetion(){
+            console.log("qnId :",this.qnId)
+            //修改模式
+            if(this.qnId > 0  ){
+                //編輯
+                if( this.EditAndSaveBtn == "編輯"){
+                    if(this.question == ""){
+                    alert("問題不能為空")
+                    return
+                    } else if(this.optionType ==""){
+                        alert("題行不得為空")
+                        return
+                    } else if(this.questionOption ==""){
+                        alert("選項不得為空")
+                        return
+                    }
+                    console.log("問題索引值:"+this.key)
+                    this.questionList[this.key].quId = this.quId
+                    this.questionList[this.key].qnId = parseInt(this.questionnaire[0].qnId)
+                    this.questionList[this.key].qTitle = this.question;
+                    this.questionList[this.key].optionType = this.optionType;
+                    this.questionList[this.key].necessary = this.necessary;
+                    this.questionList[this.key].option = this.questionOption;
+                    this.EditAndSaveBtn = "新增";
+                    alert("修改模式編輯成功");
+                    console.log("questionList:",this.questionList)
+                    return
+                }   
+                //新增
+                if(this.EditAndSaveBtn == "新增"){
+                    this.quId = this.questionList.length+1;
+                    this.questionList.push({
+                        quId:this.quId,
+                        qnId:parseInt(this.questionnaire[0].qnId),
+                        qTitle:this.question,
+                        optionType:this.optionType,
+                        necessary:this.necessary,
+                        option:this.questionOption,
+                    });
+                    this.question = "";
+                    this.optionType = "";
+                    this.necessary = false;
+                    this.questionOption = "";
+                    alert("修改模式新增成功!!");
+                    console.log("updated quList:",this.questionList)
+                    return
+                }
+            }
+
+             //新增模式編輯
+            if(this.qnId == 0){
+                //編輯
+                if( this.EditAndSaveBtn == "編輯"){
+                    if(this.question == ""){
+                        alert("問題不能為空!!")
+                        return
+                    } else if(this.optionType ==""){
+                        alert("題型不得為空!!")
+                        return
+                    } else if(this.questionOption ==""){
+                        alert("選項不得為空!!")
+                        return
+                    }
+                    // console.log("問卷索引值:"+this.key)
+                    this.questionList[this.key].quId = this.quId
+                    this.questionList[this.key].qTitle = this.question;
+                    this.questionList[this.key].optionType = this.optionType;
+                    this.questionList[this.key].necessary = this.necessary;
+                    this.questionList[this.key].option = this.questionOption;
+                    this.EditAndSaveBtn = "新增";
+                    alert("新增模式編輯成功!!");
+                    this.question = "";
+                    this.optionType = "";
+                    this.necessary = false;
+                    this.questionOption = "";
+                    console.log(this.questionList)
+                    return
+                }
+                //新增
+                if(this.EditAndSaveBtn == "新增"){
+                    if(this.question == ""){
+                        alert("問題不能為空!!")
+                        return
+                    } else if(this.optionType ==""){
+                        alert("題行不得為空!!")
+                        return
+                    } else if(this.questionOption ==""){
+                        alert("選項不得為空!!")
+                        return
+                    }
+                    this.quId = this.questionList.length+1;
+                    this.questionList.push({
+                        quId:this.quId,
+                        qTitle:this.question,
+                        optionType:this.optionType,
+                        necessary:this.necessary,
+                        option:this.questionOption,
+                    });
+                    this.question = "";
+                    this.optionType = "";
+                    this.necessary = false;
+                    this.questionOption = "";
+                    console.log(this.questionList)
+                    alert("新增模式新增成功!!");
+                }
+            }
+            },
+        //下一步
+        next(){
+            this.createStep +=1;
+            console.log("step:", this.createStep)
+            //step 1 當按下next會驗證所以條件為2
+            if(this.createStep == 2){
+                //新增模式
+                if(this.qnId == 0){
+                    if(this.newQnTitle ==""){
+                        alert("問卷名稱不得為空!!")
+                        this.createStep = 1;
+                        return
+                    } else if (this.newQnDescription =="") {
+                        alert("問卷描述不得為空!!")
+                        this.createStep = 1;
+                        return
+                    } else if (this.startDate =="") {
+                        alert("起始時間不得為空!!")
+                        this.createStep = 1;
+                        return
+                    }  else if(this.endDate =="")   {
+                        alert("結束時間不得為空!!")
+                        this.createStep = 1;
+                        return
+                        }
+
+                    this.questionnaire.push({
+                        title: this.newQnTitle,   
+                        description: this.qnDescription,
+                        published:this.published,
+                        startDate: this.startDate,
+                        endDate: this.endDate
+                        })
+                        console.log("New questionnaire :",this.questionnaire)
+                    }
+                //編輯模式
+                if(this.qnId > 0){        
+                    this.questionnaire.push({
+                        qnId:this.qnId,
+                        title: this.newQnTitle,   
+                        description: this.newQnDescription,
+                        published:this.published,
+                        endDate: this.endDate,
+                        startDate: this.startDate,
+                    })
+                    console.log("Edited questionnaire",this.questionnaire);
+                    this.getQuestion();
+                    }
+                }
+            },
         //deleteQuestionnaire
         deleQn() {
             let stopDel = false; //終止方法的可愛變數          
@@ -97,7 +358,6 @@ export default{
             })
             .catch((error) => console.error("Error:", error));
             },
-
         //新增問卷取消按鈕
         cancel(){
             this.createStep = 0;
@@ -116,21 +376,18 @@ export default{
             this.selectedIndexes = [];
             this.selectedQuIds = [];
             this.delQuList = [];
-        },
-
+            },
         //新增問卷
         create(){
             this.popup = 1 ;
             this.createStep = 1;
             console.log("step:", this.createStep)
             },
-        
         //關閉視窗
         closedele(){
             this.isdele = false
             this.controshowdel = true;
             },
-
         //顯示刪除問卷checkbox
         showdele(){
             this.isdele = true
@@ -184,7 +441,7 @@ export default{
         },
     mounted() {
         this.getQuestionnaireList();
-    },
+        },
     computed:{
 
          //分頁
@@ -360,7 +617,7 @@ export default{
                             <div class="Question-head">
                                 <div>
                                     <label for="">問卷名稱 : &nbsp;</label>
-                                    <label for="">{{ this.NewQuestionnareName }}</label>
+                                    <label for="">{{ this.newQnTitle }}</label>
                                 </div>
                                 <div>
                                     <label for="">問卷描述 : &nbsp;</label>
@@ -427,6 +684,8 @@ export default{
             </li>
         </ul>
     </div>
+     <!-- /////CDN///// -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </template>
 <style lang="scss" scoped>
 .Home{
@@ -507,10 +766,10 @@ export default{
                 width: 23%;
                 height: 100%;
                 margin: 0 1%;
-                border-radius: 10px;
                 font-weight: bold;
                 font-size: 16pt;
                 border: none;
+                border-radius: 10px;
                 }
             }
             button:hover{
@@ -569,7 +828,6 @@ export default{
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -581,19 +839,23 @@ export default{
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
             .popup-header{
-                background: #fff;
+                background: var(--primary-color);
                 display: flex;
                 padding: 10px;
+                border-radius: 10px 10px 0 0;
                 position: relative;
                 i{
                     position: absolute;
                     right: 10px;
-                    cursor: pointer;
                     margin-left: 76%;
                     margin-top: 10px;
+                    color: var(--text-color);
+                    cursor: pointer;
                 }
                 h3{
                     margin: 0;
+                    color: var(--text-color);
+                    font-weight: bold;
                     }
                 label{
                     color: black;
@@ -604,7 +866,7 @@ export default{
             .popup-body{
                 padding: 3% 0;
                 position: relative;
-                background-color: rgb(0, 96, 34);
+                background: var(--sidebar-color);
                 .closeWindows{
                     font-size: 26pt;
                     position: absolute;
@@ -615,10 +877,10 @@ export default{
                 .BuildQn-step-three{
                     height: 50vh;
                     width: 50vw;
-                    padding:  2%;
+                    padding:  2% 10%;
                     overflow-y: auto;
                     .Question-head{
-                        border: 1px white solid;
+                        border: 1px black solid;
                         border-radius: 10px;
                         padding: 2%;
                         margin-bottom: 2%;
@@ -629,26 +891,29 @@ export default{
                             margin: 0;
                             }
                         }
-                    .Question-Option{
-                        border: 1px white solid;
-                        border-radius: 10px;
-                        padding: 2%;
-                        margin-bottom: 2%;
-                        .option{
-                            display: flex;
-                            label{
-                                text-align: center;
+                    .Question{
+                        margin: 3% 0;
+                        .Question-Option{
+                            border: 1px black solid;
+                            border-radius: 10px;
+                            padding: 2%;
+                            margin-bottom: 2%;
+                            .option{
+                                display: flex;
+                                label{
+                                    text-align: center;
+                                    }
                                 }
                             }
                         }
                     }
 
                 .BuildQn-step-two{
+                    height: 50vh;
                     width: 80vw;
-                    height: 25vw;
                     padding: 0 4%;
+                    overflow-y: auto;
                     label{
-                        color: white;
                         font-size: 16pt;
                         font-weight: bold;
                         }
@@ -663,27 +928,34 @@ export default{
                     select{
                         border-radius: 10px;
                         padding: 0.5%;
+                        font-weight: bold;
                         }
                     
                     table{
                         width: 100%;
-                        height: 25vh;
-                        border: 1px white solid;
-                        background-color: rgb(0, 96, 34);
+                        max-height: 25vh;
                         overflow-y: auto;
+                        tr{
+                            height: 1%;
+                        
+                        }
 
                         td{
-                            border: 1px white solid;
+                            border: 1px black solid;
+                            text-align: center;
                             }
 
                         th{
                             height: 35px;
                             font-size: 12pt;
                             align-items: center;
+                            text-align: center;
+                            border: 1px black solid;
                             }
+
                         input{
-                        height: 70%;
-                        }
+                            height: 70%;
+                            }
 
                         .line1{
                             width: 10%;
@@ -709,6 +981,7 @@ export default{
                         button{
                             height: 80%;
                             font-size: 12pt;
+                            font-weight: bold;
                             }
                         }
                     
@@ -719,7 +992,7 @@ export default{
                         position: relative; 
                         .StepTwoCheckbox{
                             width: 3%;
-                            margin-left: 3%;
+                            margin-left: 2%;
                             height: 25px;
                             justify-content: center;
                             }
@@ -728,6 +1001,18 @@ export default{
                             position: absolute;
                             right: 0;
                             }
+                        button{
+                            background: var(--third-color);
+                            border:none;
+                            padding: 10px;
+                            border-radius: 10px;
+                            font-weight: bold;
+                            margin:  0 5px;
+                        }
+                        button:hover{
+                            border: 1px var(--primary-color) solid;
+                            transition: var(--tran-03);
+                        }
                         }
                     .Box{
                         input{
@@ -747,6 +1032,7 @@ export default{
                     justify-content: center;
                     h2{
                         text-align: center;
+                        font-weight: bold;
                         }
 
                     input{
@@ -760,21 +1046,25 @@ export default{
                 }
 
             .popup-bottom{
-                background: rgb(0, 96, 34);
-                padding: 20px 0;   
                 width: 100%;
                 display: flex;
                 justify-content: center;
+                padding: 1%;
                 button{
-                    color: white;
                     margin: 0 10px;
-                    border: 1px white solid;
                     padding: 10px;
                     font-size: 16pt;
                     font-weight: bold;
                     background: none;
                     border: none;
+                    border-radius: 10px;
                     cursor: pointer;
+                    
+                    }
+                button:hover{
+                    background:var(--primary-color);
+                    color: var(--text-color);
+                    transition: var(--tran-05);
                     }
                 }
             }
