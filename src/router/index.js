@@ -10,16 +10,16 @@ const router = createRouter({
       component: HomeView,
       children:[
         {
-          path : 'inSidePage',
-          component:()=> import('../components/InsidePage.vue')
+          path:'FinsidePage',
+          component: ()=>import('../components/FinsidePage.vue')
         },
         {
-          path : 'MakeSurePage',
-          component:()=>import('../components/MakeSurePage.vue')
+          path:'FmakeSurePage',
+          component:()=>import('../components/FmakeSurePage.vue')
         },
         {
-          path : 'StatisticsPage',
-          component:()=>import('../components/StatisticsPage.vue')
+          path:'FstatisticsPage',
+          component:()=>import('../components/FstatisticsPage.vue')
         },
       ]
 

@@ -1,152 +1,315 @@
 <script>
-import { RouterLink,RouterView } from 'vue-router';
+import { mapState, mapActions } from 'pinia';
 import indexState from '../stores/indexState';
-import {mapState,mapActions} from 'pinia';
 
 export default{
-    components:{
-        RouterLink,
-        RouterView,
-    },
-
-    computed:{
-        ...mapState(indexState,["toDayDate","endDayDate"])
-        
-        
-    },
-    mounted() {
-        const startDate = document.getElementById('stardDate');///boject
-        console.log(startDate)
-
-    },
-
     data(){
         return{
-            page: 1,
-        }
-    },
+            //所有問卷
+            allQn:[], 
+            QuestionnaireList:[],
+            qnTitle:"",
+            startDate:"",
+            endDate:"",
+            page:1,
+            currentPage: 1, 
+             //一頁的資料數
+            perpage: 10,
+            nowDate: new Date().toISOString().split('T')[0],
+            }
+        },
+
     methods:{
-        print(){
-            const startDate = document.getElementById('stardDate');
-            console.log(startDate)
+
+
+         //分頁
+        setPage(page) {
+            if(page <= 0 || page > this.totalPage) {
+                return
+            }
+            this.currentPage = page
+        },
+        //清除搜尋條件
+        Clear(){
+            this.qnTitle = "";
+            this.startDate = "";
+            this.endDate = "";
+            },
+        //搜尋
+        GetQuestionnaireList() {
+            //將要查詢的字串附加到url
+            const url = 'http://localhost:8081/api/quiz/searchPublished';
+            //帶入值
+            const queryParams = new URLSearchParams({
+                title: this.qnTitle,
+                start_date:this.startDate,
+                end_date:this.endDate,
+            });
+            const urlWithParams = `${url}?${queryParams}`;
+
+            fetch(urlWithParams,{
+                method:"GET",
+                headers:new Headers({
+                    "Content-Type":"application/json",
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin":"*"
+
+                })
+                })
+                .then((res) =>res.json())
+                .catch((error) =>console.error("Error:",error))
+                .then((data)=>{
+                    this.QuestionnaireList = data.questionnaireList.slice().reverse();
+                    console.log("QuestionnaireList", this.QuestionnaireList)
+                })
+            },
+        },
+        //後台
+        GoBackstage(){
+            this.$router.push();
+        },
+
+    mounted() {
+        this.GetQuestionnaireList(); // 将方法调用放在函数体内
+        },
+    computed:{
+        ...mapState(indexState,["toDayDate","endDayDate"]),
+
+         //分頁
+        totalPage() { 
+            //Math.ceil()取最小整數
+            return Math.ceil(this.QuestionnaireList.length / this.perpage)
+        },
+
+        //分頁
+        pageStart() {   
+            //取得該頁第一個值的index
+            return (this.currentPage - 1) * this.perpage
+        },
+
+        //分頁
+        pageEnd() {     
+            //取得該頁最後一個值的index
+            return this.currentPage * this.perpage
         }
+        
+        },
+
     }
-    
-}
 </script>
 
 <template>
-<h1>home</h1>
-<RouterLink to="InsidePage">InsidePage</RouterLink>
-<RouterLink to="MakeSurePage">MakeSurePage</RouterLink>
-<RouterLink to="StatisticsPage">StatisticsPage</RouterLink>
-
-<div class="mainArea">
-    <h1>列表頁</h1>
-        <div class="searchArea">
-            <div class="aa">
-                <div class="input">
-                    <p>問卷標題</p>
-                    <input type="text" id="titlesearch">
-                </div>
-                <div class="date">
-                    <input type="date" name="" id="startDate" v-model="toDayDate">
-                    <input type="date" name="" id="endDate" v-model="endDayDate">
-                    <button type="button">搜尋</button>
-                </div>
+    <div class="Home">
+        <div class="Header">
+            <div class="User">
+                <label for="">User : &nbsp xxx</label>
+                <button @click="GoBackstage">後台</button>
+                <button>登入</button>
             </div>
         </div>
-        <!-- -------------------------------------------list預設<table> -->
-        <div class="listArea">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">問卷</th>
-                        <th scope="col">狀態</th>
-                        <th scope="col">開始時間</th>
-                        <th scope="col">結束時間</th>
-                        <th scope="col">觀看統計</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <th scope="row">1</th>
-                        <td><a href="#">問卷1</a></td>
-                        <td>Otto</td>
-                        <td>@mdo</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">2</th>
-                        <td><a href="#">問卷2</a></td>
-                        <td>Thornton</td>
-                        <td>@fat</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">3</th>
-                        <td><a href="#">問卷3</a></td>
-                        <td>@twitter</td>
-                    </tr>
-                </tbody>
+        <!-- 搜尋 -->
+        <div class="Search">
+            <div class="Input">
+                <div>
+                    <label>搜尋問卷 :&nbsp</label>
+                    <input type="text" v-model="qnTitle">
+                </div>
+                <div>
+                    <label for="">開始時間 :&nbsp</label>
+                    <input type="date" v-model="startDate">
+                </div>
+                <div>
+                    <label for="">結束時間 :&nbsp</label>
+                    <input type="date" v-model="endDate">
+                </div>
+            </div>
+            <div class="Button">
+                <button id="SearchBtn" @click="GetQuestionnaireList">搜尋</button>
+                <button id="ClearBtn" @click="Clear">清除</button>
+            </div>
+        </div>
+        <!-- 問卷清單 -->
+        <div class="Form">
+            <table>
+                <tr>
+                    <th>編號</th>
+                    <th>問卷</th>
+                    <th>狀態</th>
+                    <th>開始時間</th>
+                    <th>結束時間</th>
+                    <th>統計</th>
+                </tr>
+                <tr  v-for="(quiz,index) in QuestionnaireList.slice(pageStart,pageEnd)" :key="index">
+                    <!-- <td class="checkboxTd" v-show="isdele">
+                        <input type="checkbox" v-model="quiz.checkbox" @change="handleCheckboxChange(quiz.questionnaire.id)" @click="catchIndex(index)" >
+                    </td> -->
+                    <td>{{ quiz.id }}</td>
+                    <!--編輯判斷 -->
+                    <td v-if="quiz.published == false ||quiz.published == true && nowDate <= quiz.startDate" @click='editQuestion(index)' :key="index" style="cursor: pointer;">{{ quiz.title }} </td>
+                    <td v-else-if="quiz.published==true"  style="cursor: not-allowed;">{{ quiz.title }} </td>
+                    <td v-if=" quiz.published == true && nowDate < quiz.startDate || quiz.published == false && nowDate < quiz.startDate">尚未開始</td>
+                    <td v-if="quiz.endDate < nowDate ">已結束</td>
+                    <td v-else-if="quiz.startDate <= nowDate && nowDate <= quiz.endDate ">進行中</td>
+                    <td>{{ quiz.startDate }}</td>
+                    <td>{{ quiz.endDate }}</td>
+                    <!-- 進行中、已結束可以觀看結果 -->
+                    <td style="cursor: pointer;" @click="goResult(index)" :key="index" v-if="quiz.startDate <= nowDate && nowDate <= quiz.endDate || this.nowDate > quiz.endDate">前往</td>
+                    <td v-else  style="cursor: not-allowed;">尚未開始</td>
+                </tr>
             </table>
         </div>
-        <div class="changePage"></div>
-        <!-- -------------------------------------------list預設<table> -->
-            
-        <!-- ----------------------------------------list for迴圈實現 -->
-        <!-- <div class="listArea">
-            <div v-for=""></div>
-        </div> -->
-        <!-- ----------------------------------------list for迴圈實現 -->
-</div> 
-        <button @click="print()">123</button>
+        <!-- 分頁 -->
+        <ul class="pagination">
+            <li class="page-item" @click.prevent="setPage(currentPage-1)">
+                <a class="page-link" href="#" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item" :class="{'active': (currentPage === (n))}"
+                v-for="(n, index) in totalPage" :key="index" @click.prevent="setPage(n)">
+                <a class="page-link" href="#">{{ n }}</a>
+            </li>
+            <li class="page-item" @click.prevent="setPage(currentPage+1)">
+                <a class="page-link" href="#" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </div>
 </template>
 
 <style lang="scss" scoped>
-p{
-    margin: 0;
-}
-input{
-    height: 20px;
-}
-table{
+.Home{
+    height: 100%;
     width: 100%;
-    text-align: left;
-}
-.mainArea{
-    height: 100vh;
-    width: 100vw;
-    background-color: whitesmoke;
-    .searchArea{
-        height: 15%;
-        width: 60%;
-        border: 1px black solid;
-        margin: 0 20%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        .aa{
-        }
-        .input{
-            width: auto;
-            display: flex;
-            margin-bottom: 10%;
-        }
-    }
-    .listArea{
-        height: 50%;
-        width: 70%;
-        margin: 15%;
-        border: 1px black solid;
-        margin: 0 15%;
-    }
-    .changePage{
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    font-weight: bold;
+
+    .Header{
         height: 10%;
-        width: 40%;
-        border: 1px black solid;
-        margin: 0 30%;
-    }
+        width: 100%;
+        position: relative;
+        
+        .User{
+            background: var(--primary-color);
+            padding: 0.5%;
+            border-radius: 10px;
+            width: 20%;
+            position: absolute;
+            right: 5%;
+
+            label{
+                margin-left: 10%;font-weight: bold;
+            }
+
+            button{
+                border-radius: 10px;
+                margin-left: 10%;font-weight: bold;
+                }
+                
+            button:hover{
+                background: var(--third-hover-color);
+                transition: var(--tran-03);
+                font-weight: bold;
+                }
+
+            }
+        }
+
+    .Search{
+        display: flex;
+        width: 50%;
+        height: 20%;
+        overflow: hidden; 
+        .Input{
+            width: 60%;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: column;
+
+            label{
+                font-weight: bold;
+                }
+
+            input{
+                border-radius: 10px;
+                width: 70%;
+                padding: 0 3%;
+                }
+            
+            }
+        .Button{
+            width: 50%;
     
+            button{
+                width: 48%;
+                height: 100%;
+                margin: 0 1%;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 16pt;
+                border: none;
+                }
+            }
+
+        #SearchBtn{
+            background:var(--primary-color);
+            color: var(--text-color);
+            }
+    
+            #SearchBtn:hover{
+                background:var(--primary-hover-color);
+                transition: var(--tran-03);
+                }
+            #ClearBtn:hover{
+                border: 1px var(--primary-color) solid;
+            }
+        }
+    .Form{
+        width: 100%;
+        height: 50vh; 
+        margin-top: 2%;
+
+        table{
+            width: 90%;
+            // height: 100%;
+            margin: 0 5%;
+            padding: 2%;
+            border: 1px black solid;
+        
+            background: var(--third-color);
+
+            tr {
+                /* 添加样式以避免充满整个表格 */
+                display: table-row;
+                border: 1px black solid;
+            }
+
+            tr:hover{
+                background: var( --third-hover-color);
+                transition: var(--tran-03);
+            }
+
+
+            th{
+                text-align: center;
+                height: 20px;
+                border: 1px black solid;
+                }
+            td{
+                height: 30px;
+                text-align: center;
+                border: 1px black solid;
+                }
+            }
+        }
+
+    .pagination{
+        margin-top: 2%;
+        }   
+
 }
 </style>
-

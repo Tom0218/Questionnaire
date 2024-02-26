@@ -1,3 +1,26 @@
 @import'../../node_modules/bootstrap/scss/functions';
 @import './stylesheet/variables';
 @import'../../node_modules/bootstrap/scss/bootstrap.scss';
+
+
+:root{
+    //=====Colors=====
+    --body-color: #E4E9F7;
+    --sidebar-color: #ffffff;
+    --sidebar-color2: #ffffffcc;
+    --primary-color:#1a78fd;
+    --primary-color-light: #9860cc;
+    --secondary-color:rgb(113, 0, 179);
+    --third-color:#F8F9FA;
+
+    --toggle-color: #DDD;
+    --text-color:white;
+    --primary-hover-color:#085bd0;
+    --secondary-hover-color:rgb(113, 0, 179);
+    --third-hover-color:#DADCE0;
+    //=====Transition=====
+    --tran-02: all 0.2s ease;
+    --tran-03: all 0.3s ease;
+    --tran-04: all 0.4s ease;
+    --tran-05: all 0.5s ease;
+}
