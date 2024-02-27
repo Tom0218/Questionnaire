@@ -3,7 +3,6 @@ export default{
     data(){
         return{
             allQn:[], //所有問卷
-            questionnaireList:[],
             createStep:0,//建立問卷步驟控制
             qnTitle:"", //搜尋條件
             startDate:"", //搜尋條件
@@ -30,7 +29,8 @@ export default{
             selectedQuIds : [],
             delQuList : [],
             EditAndSaveBtn:"新增", 
-            qnId:0,           
+            qnId:0,     
+            key:"",      
             /////分頁/////
             page:1, //分頁條件
             currentPage: 1, 
@@ -41,6 +41,81 @@ export default{
         }
     },
     methods:{
+        //獲取当前日期
+        isPublished() {
+            this.nowDate = new Date().toISOString().split('T')[0];   
+            },
+         //checkboxgeQnId fn
+        handleCheckboxChange(questionnaireId) {
+            const selectQnIds = this.selectedqnIds.indexOf(questionnaireId);
+            if ( selectQnIds !== -1) {
+                this.selectedqnIds.splice(selectQnIds, 1);
+            } else { 
+                this.selectedqnIds.push(questionnaireId);// 如果 ID 不存在于数组中，添加到数组
+            }
+            console.log('Selected Questionnaire Ids:',this.selectedqnIds); // 输出更新后的数组
+            console.log(this.nowDate > 2023-12-3)
+            },
+        handleCheckboxChangeForStepTwo(index){
+            const currentQuId = this.questionList[index].quId;
+            if (this.questionList[index].checkbox) {
+                // 如果复选框被选中，将 quId 存入数组
+                this.selectedQuIds.push(currentQuId);
+                this.selectedIndexes.push(index);
+            } else {
+                // 如果复选框取消选中，从数组中删除 quId
+                const indexToDelete = this.selectedQuIds.indexOf(currentQuId);
+                if (indexToDelete !== -1) {
+                    this.selectedQuIds.splice(indexToDelete, 1);
+                }
+                // 从数组中删除索引
+                this.selectedIndexes = this.selectedIndexes.filter(i => i !== index);
+            }
+            console.log("QuIds:", this.selectedQuIds);
+        },
+         //計算索引值
+        catchIndex(index){
+            var pageIndex = (this.currentPage-1)*10 + index;
+            this.selectQnIndexArr.push({qnId:this.allQn[pageIndex].questionnaire.id, currentPage:this.currentPage, index:index}); 
+            console.log("selectQnIndexArr:",this.selectQnIndexArr);
+            },
+
+        //進行編輯(修改內容)
+        editQuestion(index){
+            var pageIndex = ((this.currentPage-1)*this.perpage+index); 
+            this.qnId = this.allQn[pageIndex].questionnaire.id;
+            this.newQnTitle =  this.allQn[pageIndex].questionnaire.title;
+            this.newQnDescription =  this.allQn[pageIndex].questionnaire.description;
+            this.startDate =  this.allQn[pageIndex].questionnaire.startDate;
+            this.endDate = this.allQn[pageIndex].questionnaire.endDate;
+            this.published=this.allQn[pageIndex].questionnaire.published;
+            console.log("qnId:"+this.qnId)
+            this.popup = 1;
+            this.next();
+            },
+        //編輯(資訊傳送至input)
+        edit(index){
+            //編輯模式下編輯
+            if(this.qnId > 0){ 
+                this.EditAndSaveBtn = "編輯"
+                this.quId = this.questionList[index].quId;
+                this.qnId = parseInt(this.questionnaire[0].qnId)
+                this.question = this.questionList[index].qTitle;
+                this.optionType = this.questionList[index].optionType;
+                this.necessary = this.questionList[index].necessary;
+                this.questionOption = this.questionList[index].option;
+                this.key = index
+                }else{
+                    //新增模式下編輯
+                    this.EditAndSaveBtn = "編輯"
+                        this.quId = this.questionList[index].quId;
+                        this.question = this.questionList[index].qTitle;
+                        this.optionType = this.questionList[index].optionType;
+                        this.necessary = this.questionList[index].necessary;
+                        this.questionOption = this.questionList[index].option;
+                        this.key = index
+                }
+            },
         //儲存(不發布)
         save(){
             console.log("questionnaire:",this.questionnaire)
@@ -142,7 +217,6 @@ export default{
             })
             .catch((error) => console.error("Error:", error));
             },
-
         //新增或編輯問題
         addOREditQuetion(){
             console.log("qnId :",this.qnId)
@@ -192,7 +266,6 @@ export default{
                     return
                 }
             }
-
              //新增模式編輯
             if(this.qnId == 0){
                 //編輯
@@ -279,7 +352,7 @@ export default{
 
                     this.questionnaire.push({
                         title: this.newQnTitle,   
-                        description: this.qnDescription,
+                        description: this.newQnDescription,
                         published:this.published,
                         startDate: this.startDate,
                         endDate: this.endDate
@@ -301,7 +374,7 @@ export default{
                     }
                 }
             },
-        //deleteQuestionnaire
+        //刪除問卷
         deleQn() {
             let stopDel = false; //終止方法的可愛變數          
             var qnIdList = [] ; // 後端需要的qnidList   
@@ -358,6 +431,23 @@ export default{
             })
             .catch((error) => console.error("Error:", error));
             },
+        //刪除問題
+        delQu(){
+             //新增模式下delQu
+            if(this.qnId == 0){
+                this.selectedIndexes.forEach(item => {
+                    this.delQuList =  this.selectedQuIds
+                    this.questionList.splice(item,1);
+                });
+    
+                this.questionList.forEach((item, index) => {
+                    item.quId = index + 1;
+                });
+    
+                console.log("Updated QuestionList :", this.questionList)
+                console.log("Deleteed QuList :", this.delQuList)
+            }
+            },
         //新增問卷取消按鈕
         cancel(){
             this.createStep = 0;
@@ -406,7 +496,7 @@ export default{
         //搜尋
         getQuestionnaireList() {
             //將要查詢的字串附加到url
-            const url = 'http://localhost:8081/api/quiz/searchPublished';
+            const url = 'http://localhost:8081/api/quiz/search';
             //帶入值
             const queryParams = new URLSearchParams({
                 title: this.qnTitle,
@@ -419,7 +509,6 @@ export default{
                 method:"GET",
                 headers:new Headers({
                     "Content-Type":"application/json",
-                    "Content-Type": "application/json",
                     "Access-Control-Allow-Origin":"*"
 
                 })
@@ -427,8 +516,8 @@ export default{
                 .then((res) =>res.json())
                 .catch((error) =>console.error("Error:",error))
                 .then((data)=>{
-                    this.questionnaireList = data.questionnaireList.slice().reverse();
-                    console.log("QuestionnaireList", this.questionnaireList)
+                    this.allQn = data.quizVoList.slice().reverse();
+                    console.log( "allQn:",this.allQn)
                 })
             },
         //分頁方法
@@ -441,13 +530,14 @@ export default{
         },
     mounted() {
         this.getQuestionnaireList();
+        this.isPublished();
         },
     computed:{
 
          //分頁
         totalPage() { 
             //Math.ceil()取最小整數
-            return Math.ceil(this.questionnaireList.length / this.perpage)
+            return Math.ceil(this.allQn.length / this.perpage)
         },
 
         //分頁
@@ -509,21 +599,21 @@ export default{
                     <th>結束時間</th>
                     <th>統計</th>
                 </tr>
-                <tr  v-for="(quiz,index) in questionnaireList.slice(pageStart,pageEnd)" :key="index">
+                <tr  v-for="(quiz,index) in allQn.slice(pageStart,pageEnd)" :key="index">
                     <!-- <td class="checkboxTd" v-show="isdele">
                         <input type="checkbox" v-model="quiz.checkbox" @change="handleCheckboxChange(quiz.questionnaire.id)" @click="catchIndex(index)" >
                     </td> -->
-                    <td>{{ quiz.id }}</td>
+                    <td>{{ quiz.questionnaire.id }}</td>
                     <!--編輯判斷 -->
-                    <td v-if="quiz.published == false ||quiz.published == true && nowDate <= quiz.startDate" @click='editQuestion(index)' :key="index" style="cursor: pointer;">{{ quiz.title }} </td>
-                    <td v-else-if="quiz.published==true"  style="cursor: not-allowed;">{{ quiz.title }} </td>
-                    <td v-if=" quiz.published == true && nowDate < quiz.startDate || quiz.published == false && nowDate < quiz.startDate">尚未開始</td>
-                    <td v-if="quiz.endDate < nowDate ">已結束</td>
-                    <td v-else-if="quiz.startDate <= nowDate && nowDate <= quiz.endDate ">進行中</td>
-                    <td>{{ quiz.startDate }}</td>
-                    <td>{{ quiz.endDate }}</td>
+                    <td v-if="quiz.questionnaire.published == false || quiz.questionnaire.published == true && nowDate <= quiz.questionnaire.startDate" @click='editQuestion(index)' :key="index" style="cursor: pointer;">{{ quiz.questionnaire.title }} </td>
+                    <td v-else-if="quiz.questionnaire.published==true"  style="cursor: not-allowed;">{{ quiz.questionnaire.title }} </td>
+                    <td v-if=" quiz.questionnaire.published == true && nowDate < quiz.questionnaire.startDate || quiz.questionnaire.published == false && nowDate < quiz.questionnaire.startDate">尚未開始</td>
+                    <td v-if="quiz.questionnaire.endDate < nowDate ">已結束</td>
+                    <td v-else-if="quiz.questionnaire.startDate <= nowDate && nowDate <= quiz.questionnaire.endDate ">進行中</td>
+                    <td>{{ quiz.questionnaire.startDate }}</td>
+                    <td>{{ quiz.questionnaire.endDate }}</td>
                     <!-- 進行中、已結束可以觀看結果 -->
-                    <td style="cursor: pointer;" @click="goResult(index)" :key="index" v-if="quiz.startDate <= nowDate && nowDate <= quiz.endDate || this.nowDate > quiz.endDate">前往</td>
+                    <td style="cursor: pointer;" @click="goResult(index)" :key="index" v-if="quiz.questionnaire.startDate <= nowDate && nowDate <= quiz.questionnaire.endDate || this.nowDate > quiz.questionnaire.endDate">前往</td>
                     <td v-else  style="cursor: not-allowed;">尚未開始</td>
                 </tr>
             </table>
@@ -959,7 +1049,9 @@ export default{
 
                         .line1{
                             width: 10%;
-                            align-items: center;
+                            input{
+                                margin-top: 6px;
+                                }
                             }
                         .line2{
                             width: 10%;

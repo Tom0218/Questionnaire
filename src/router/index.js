@@ -28,6 +28,11 @@ const router = createRouter({
       name: 'BackView',
       component: () => import('../views/BackView.vue')
     },
+    {
+      path:'/BackstageStaticView',
+      name: 'BackstageStaticView',
+      component: () => import('../views/BackstageStaticView.vue')
+    },
   
   ]
 })
