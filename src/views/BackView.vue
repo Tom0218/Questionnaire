@@ -5,6 +5,7 @@ export default{
             allQn:[], //所有問卷
             createStep:0,//建立問卷步驟控制
             qnTitle:"", //搜尋條件
+            description:'',
             startDate:"", //搜尋條件
             endDate:"", //搜尋條件
 
@@ -30,7 +31,10 @@ export default{
             delQuList : [],
             EditAndSaveBtn:"新增", 
             qnId:0,     
-            key:"",      
+            key:"",     
+            /////觀看統計/////
+            checkStatic:0,
+            userList:[],
             /////分頁/////
             page:1, //分頁條件
             currentPage: 1, 
@@ -41,6 +45,68 @@ export default{
         }
     },
     methods:{
+         //倒序填寫資料
+        uniqueUsers() {
+            const uniqueUsers = [];
+            const addedQnIds = [];
+            this.userList.forEach((user) => {
+                if (!addedQnIds.includes(user.name)) {
+                uniqueUsers.push(user);
+                addedQnIds.push(user.name);
+                }
+            });
+            return uniqueUsers.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+            }, 
+        //取得所有user資料
+        getSubmission() {
+            const url = 'http://localhost:8081/api/quiz/getSubmission';
+            const queryParams = new URLSearchParams({
+                qnId: this.qnId
+            });
+            const urlWithParams = `${url}?${queryParams}`;
+            fetch(urlWithParams, {
+                method: 'GET',
+                headers: {
+                    "Accept": "application/json", // 指定接受的回應類型
+                },
+            })
+            .then(response => response.json())
+            .then(data => {    
+                if (data.userList == null) {
+                    alert("無填寫資料!!");
+                    this.$router.push('Questionnaire')
+                    return
+                } else {
+                    console.log("UserList");
+                    this.userList = data.userList;
+                    console.log(this.userList);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+                // Handle error, show alert, etc.
+            });
+            },
+        //觀看結果
+        goResult(index){
+            //彈出視窗、顯示統計頁
+            this.popup = 1; 
+            this.checkStatic = 1;
+
+            var pageIndex = ((this.currentPage-1)*this.perpage+index); 
+            this.qnId = this.allQn[pageIndex].questionnaire.id;
+            this.qnTitle =  this.allQn[pageIndex].questionnaire.title;
+            this.description =  this.allQn[pageIndex].questionnaire.description;
+            console.log("qnId : ",this.qnId )
+            // this.$router.push({
+            //     name:"QuestionnaireStaticPage",
+            //     query:{
+            //         qnId:this.qnId,
+            //         title:this.title,
+            //         description: this.description,
+            //     }
+            // })
+            },
         //獲取当前日期
         isPublished() {
             this.nowDate = new Date().toISOString().split('T')[0];   
@@ -72,7 +138,7 @@ export default{
                 this.selectedIndexes = this.selectedIndexes.filter(i => i !== index);
             }
             console.log("QuIds:", this.selectedQuIds);
-        },
+            },
          //計算索引值
         catchIndex(index){
             var pageIndex = (this.currentPage-1)*10 + index;
@@ -466,6 +532,10 @@ export default{
             this.selectedIndexes = [];
             this.selectedQuIds = [];
             this.delQuList = [];
+            this.qnId = 0;//統計
+            this.qnTitle =  "";//統計
+            this.description =  "";//統計
+            this.checkStatic = 0;//統計
             },
         //新增問卷
         create(){
@@ -623,8 +693,9 @@ export default{
         <div class="popup"  v-if ="popup == 1">
             <div class="popup-content">
                 <div class="popup-header">
-                    <h3>建立問卷(步驟{{this.createStep}})</h3>
+                    <h5 v-if="this.createStep > 0">建立問卷(步驟{{this.createStep}})</h5>
                     <i class="fa-solid fa-circle-xmark" @click="cancel()"></i>
+                    <h5 v-if="this.checkStatic > 0">這是統計頁</h5>
                     <!-- <h2>{{ title }}</h2> -->
                 </div>
 
@@ -744,37 +815,75 @@ export default{
                                 </div>
                             </div>
                         </div>
+                        <div class="Static" v-if="this.checkStatic == 1">
+                                <table>
+                                    <tr>
+                                        <th>編號</th>
+                                        <th>姓名</th>
+                                        <th>填寫時間</th>
+                                        <th>觀看回覆</th>
+                                    </tr>
+                                    <tr v-for="user,index in uniqueUsers" :key="user.qnId">
+                                        <td>{{index + 1}}</td>
+                                        <td>{{ user.name }}</td>
+                                        <td>{{ formatDate(user.dateTime) }}</td>
+                                        <td @click="gofeedback(user.qnId,user.name,user.phoneNumber,user.email,user.age)">前往</td>
+                                    </tr>
+                                </table>
+                            <!-- ==========================================================================分頁 -->
+                                <ul class="pagination">
+                                        <li class="page-item" @click.prevent="setPage(currentPage-1)">
+                                            <a class="page-link" href="#" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item" :class="{'active': (currentPage === (n))}"
+                                            v-for="(n, index) in totalPage" :key="index" @click.prevent="setPage(n)">
+                                            <a class="page-link" href="#">{{ n }}</a>
+                                        </li>
+                                        <li class="page-item" @click.prevent="setPage(currentPage+1)">
+                                            <a class="page-link" href="#" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                </ul>
+                            <!-- ==========================================================================分頁 -->
+                        </div>
                     </div>
                 </div>
-                <div class="popup-bottom">
+                <div class="popup-bottom"  v-if="this.checkStatic == 0">
                     <button type="button" @click="cancel()">取消</button>
-                    <button type="button" @click="this.createStep -=1" v-if="this.createStep > 1">上一步</button>
-                    <button type="button" class="flicker" v-if="this.createStep !=3" @click="next">下一步</button>
-                    <button v-if="this.createStep ==3" @click="save">儲存</button>
-                    <button v-if="this.createStep ==3" @click="saveAndpub">儲存並發布</button>
+                        <button type="button" @click="this.createStep -=1" v-if="this.createStep > 1">上一步</button>
+                        <button type="button" class="flicker" v-if="this.createStep !=3" @click="next">下一步</button>
+                        <button v-if="this.createStep ==3" @click="save">儲存</button>
+                        <button v-if="this.createStep ==3" @click="saveAndpub">儲存並發布</button>
+                </div>
+                <div class="popup-bottom" v-if="this.checkStatic == 1">
+                    <button type="button" @click="cancel()">取消</button>
                 </div>
             </div>
         </div>
-
-        <!-- 分頁 -->
-        <ul class="pagination">
-            <li class="page-item" @click.prevent="setPage(currentPage-1)">
-                <a class="page-link" href="#" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            </li>
-            <li class="page-item" :class="{'active': (currentPage === (n))}"
-                v-for="(n, index) in totalPage" :key="index" @click.prevent="setPage(n)">
-                <a class="page-link" href="#">{{ n }}</a>
-            </li>
-            <li class="page-item" @click.prevent="setPage(currentPage+1)">
-                <a class="page-link" href="#" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            </li>
-        </ul>
+        <div>
+            <!-- 分頁 -->
+            <ul class="pagination" v-if="this.popup == 0">
+                <li class="page-item" @click.prevent="setPage(currentPage-1)">
+                    <a class="page-link" href="#" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item" :class="{'active': (currentPage === (n))}"
+                    v-for="(n, index) in totalPage" :key="index" @click.prevent="setPage(n)">
+                    <a class="page-link" href="#">{{ n }}</a>
+                </li>
+                <li class="page-item" @click.prevent="setPage(currentPage+1)">
+                    <a class="page-link" href="#" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
-     <!-- /////CDN///// -->
+    <!--/////CDN/////-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </template>
 <style lang="scss" scoped>
@@ -911,7 +1020,7 @@ export default{
     .pagination{
         margin-top: 2%;
         }
-
+    
     .popup{
         position: fixed;
         top: 0;
@@ -926,7 +1035,8 @@ export default{
             margin: 5px 0;
             }
         .popup-content{
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 10);
+            border-radius: 10px;
 
             .popup-header{
                 background: var(--primary-color);
@@ -942,7 +1052,7 @@ export default{
                     color: var(--text-color);
                     cursor: pointer;
                 }
-                h3{
+                h5{
                     margin: 0;
                     color: var(--text-color);
                     font-weight: bold;
@@ -954,15 +1064,33 @@ export default{
                 }   
 
             .popup-body{
-                padding: 3% 0;
                 position: relative;
                 background: var(--sidebar-color);
-                .closeWindows{
-                    font-size: 26pt;
-                    position: absolute;
-                    right: 0;
-                    color: #4b85a0;
+                .Static{
+                    height: 70vh;
+                    width: 70vw;
+                    display: flex;
+                    justify-content: center;
+                    align-items: baseline;
+                    background: red;
+                    margin: 0;
+                    padding: 2% 2% 0% 2%; //上、右、下、左
+                    position: relative;
+                    
+                    table{
+                        width: 100%;
+                        padding: 1%;
+                        border: 1px black solid;
+                        th{
+                            text-align: center;
+                            border: 1px black solid;
+                        }
                     }
+                    .pagination{
+                        position: absolute;
+                        bottom: -3%;
+                    }
+                }
 
                 .BuildQn-step-three{
                     height: 50vh;
@@ -1142,10 +1270,9 @@ export default{
                 display: flex;
                 justify-content: center;
                 padding: 1%;
+                border-radius: 0 0 10px 10px;
                 button{
-                    margin: 0 10px;
                     padding: 10px;
-                    font-size: 16pt;
                     font-weight: bold;
                     background: none;
                     border: none;

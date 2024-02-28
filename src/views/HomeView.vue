@@ -5,29 +5,48 @@ import indexState from '../stores/indexState';
 export default{
     data(){
         return{
-            //所有問卷
-            allQn:[], 
-            QuestionnaireList:[],
+            allQn:[],//所有問卷
             qnTitle:"",
             startDate:"",
             endDate:"",
-            page:1,
-            currentPage: 1, 
-             //一頁的資料數
-            perpage: 10,
+            page:1,//分頁
+            currentPage: 1, //分頁
+            perpage: 10,//一頁的資料數
             nowDate: new Date().toISOString().split('T')[0],
+            popup:0,//彈出視窗
             }
         },
 
     methods:{
+        //填寫問卷
+        fillInQuestionnaire(index){ 
+            const pagination = this.$refs.pagination
+            pagination.style.display = 'none';
+            this.popup = 1;
+            var pageIndex = ((this.currentPage-1)*this.perpage+index); 
+            this.qnId = this.allQn[pageIndex].id;
+            this.qnTitle =  this.allQn[pageIndex].title;
+            this.qnDescription =  this.allQn[pageIndex].description;
+            },
 
          //分頁
         setPage(page) {
             if(page <= 0 || page > this.totalPage) {
                 return
             }
-            this.currentPage = page
-        },
+                this.currentPage = page
+            },
+        cancel(){
+            const pagination = this.$refs.pagination
+            pagination.style.display = 'flex';
+            this.popup = 0 ;
+            this.startDate = "";
+            this.endDate = "";
+            this.selectedIndexes = [];
+            this.selectedQuIds = [];
+            this.qnId = 0;
+            this.qnTitle =  "";
+            },
         //清除搜尋條件
         Clear(){
             this.qnTitle = "";
@@ -58,8 +77,8 @@ export default{
                 .then((res) =>res.json())
                 .catch((error) =>console.error("Error:",error))
                 .then((data)=>{
-                    this.QuestionnaireList = data.questionnaireList.slice().reverse();
-                    console.log("QuestionnaireList", this.QuestionnaireList)
+                    this.allQn = data.questionnaireList.slice().reverse();
+                    console.log("QuestionnaireList", this.allQn)
                 })
             },
         //後台
@@ -77,7 +96,7 @@ export default{
          //分頁
         totalPage() { 
             //Math.ceil()取最小整數
-            return Math.ceil(this.QuestionnaireList.length / this.perpage)
+            return Math.ceil(this.allQn.length / this.perpage)
         },
 
         //分頁
@@ -138,27 +157,46 @@ export default{
                     <th>結束時間</th>
                     <th>統計</th>
                 </tr>
-                <tr  v-for="(quiz,index) in QuestionnaireList.slice(pageStart,pageEnd)" :key="index">
-                    <!-- <td class="checkboxTd" v-show="isdele">
-                        <input type="checkbox" v-model="quiz.checkbox" @change="handleCheckboxChange(quiz.questionnaire.id)" @click="catchIndex(index)" >
-                    </td> -->
-                    <td>{{ quiz.id }}</td>
-                    <!--編輯判斷 -->
-                    <td v-if="quiz.published == false ||quiz.published == true && nowDate <= quiz.startDate" @click='editQuestion(index)' :key="index" style="cursor: pointer;">{{ quiz.title }} </td>
-                    <td v-else-if="quiz.published==true"  style="cursor: not-allowed;">{{ quiz.title }} </td>
-                    <td v-if=" quiz.published == true && nowDate < quiz.startDate || quiz.published == false && nowDate < quiz.startDate">尚未開始</td>
-                    <td v-if="quiz.endDate < nowDate ">已結束</td>
-                    <td v-else-if="quiz.startDate <= nowDate && nowDate <= quiz.endDate ">進行中</td>
+                <tr v-for="(quiz,index) in allQn.slice(pageStart,pageEnd)" :key="index">
+                    <td >{{ quiz.id }}</td>
+                    <!-- 進行中 -->
+                    <td style="cursor: pointer" @click='fillInQuestionnaire(index)' :key="index" v-if=" quiz.startDate <= this.nowDate && this.nowDate <= quiz.endDate"> 
+                        {{ quiz.title }}
+                    </td>
+                    <!-- 已結束、尚未開始 -->
+                    <td style="cursor: not-allowed;" v-else> 
+                        {{ quiz.title }}
+                    </td>
+                    <td v-if="quiz.published ==true && quiz.startDate < this.nowDate && this.nowDate <= quiz.endDate">進行中</td>
+                    <td v-else-if="quiz.published ==true && quiz.startDate > this.nowDate">尚未開始</td>
+                    <td v-else>已結束</td>
                     <td>{{ quiz.startDate }}</td>
                     <td>{{ quiz.endDate }}</td>
-                    <!-- 進行中、已結束可以觀看結果 -->
-                    <td style="cursor: pointer;" @click="goResult(index)" :key="index" v-if="quiz.startDate <= nowDate && nowDate <= quiz.endDate || this.nowDate > quiz.endDate">前往</td>
+                    <td @click="goStatistics(index)" :key="index" style="cursor: pointer;" v-if=" quiz.startDate < this.nowDate && this.nowDate < quiz.endDate || this.nowDate >= quiz.endDate">前往</td>
                     <td v-else  style="cursor: not-allowed;">尚未開始</td>
                 </tr>
             </table>
         </div>
+        <div class="popup"  v-if ="popup == 1">
+            <div class="popup-content">
+                <div class="popup-header">
+                    <i class="fa-solid fa-circle-xmark" @click="cancel()"></i>
+                    <h5>{{ this.qnTitle }}</h5>
+                </div>
+
+                <div class="popup-body">
+                    <!-- 弹出窗口的内容放在这里 -->
+                    <div class="InsidePage">
+                        <p>問卷內頁</p>
+                    </div>
+                </div>
+                <div class="popup-bottom" >
+                    <button type="button" @click="cancel()">取消</button>
+                </div>
+            </div>
+        </div>
         <!-- 分頁 -->
-        <ul class="pagination">
+        <ul class="pagination" ref="pagination">
             <li class="page-item" @click.prevent="setPage(currentPage-1)">
                 <a class="page-link" href="#" aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
@@ -224,7 +262,6 @@ export default{
         width: 60%;
         height: 20%;
         overflow: hidden;
-     
         .Input{
             width: 50%;
             display: flex;
@@ -269,13 +306,13 @@ export default{
             color: var(--text-color);
             }
     
-            #SearchBtn:hover{
-                background:var(--primary-hover-color);
-                transition: var(--tran-03);
-                }
-            #ClearBtn:hover{
-                border: 1px var(--primary-color) solid;
+        #SearchBtn:hover{
+            background:var(--primary-hover-color);
+            transition: var(--tran-03);
             }
+        #ClearBtn:hover{
+            border: 1px var(--primary-color) solid;
+        }
         }
     .Form{
         width: 100%;
@@ -315,6 +352,82 @@ export default{
                 }
             }
         }
+    
+    .popup{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        .Box{
+            display: flex;
+            margin: 5px 0;
+            }
+        .popup-content{
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 10);
+            border-radius: 10px;
+
+            .popup-header{
+                background: var(--primary-color);
+                display: flex;
+                padding: 10px;
+                border-radius: 10px 10px 0 0;
+                position: relative;
+                i{
+                    position: absolute;
+                    right: 10px;
+                    margin-left: 76%;
+                    margin-top: 10px;
+                    color: var(--text-color);
+                    cursor: pointer;
+                }
+                h5{
+                    margin: 0;
+                    color: var(--text-color);
+                    font-weight: bold;
+                    }
+                label{
+                    color: black;
+                    font-weight: bold;
+                    }
+                }   
+
+            .popup-body{
+                position: relative;
+                background: var(--sidebar-color);
+                .InsidePage{
+                    height: 80vh;
+                    width: 80vw;
+                    background: red;
+                    }
+                }
+            .popup-bottom{
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                padding: 1%;
+                border-radius: 0 0 10px 10px;
+                button{
+                    padding: 10px;
+                    font-weight: bold;
+                    background: none;
+                    border: none;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    
+                    }
+                button:hover{
+                    background:var(--primary-color);
+                    color: var(--text-color);
+                    transition: var(--tran-05);
+                    }
+                }
+            }
+        }
+
 
     .pagination{
         margin-top: 2%;
