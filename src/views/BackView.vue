@@ -45,6 +45,113 @@ export default{
         }
     },
     methods:{
+         //存DB且發佈
+        saveAndpub(){
+            var questionList = this.questionList;
+            //編輯模式存DB且發佈
+            if(this.qnId > -1){
+                var url = "http://localhost:8081/api/quiz/update";
+                var Qn = {
+                    "questionnaire": {
+                        "id":this.questionnaire[0].qnId,
+                        "title": this.questionnaire[0].title,
+                        "description":this.questionnaire[0].description,
+                        "published":true,
+                        "startDate": this.questionnaire[0].startDate,
+                        "endDate": this.questionnaire[0].endDate
+                    },
+                    "question_list": []
+                }
+                for (let i = 0; i < this.questionList.length; i++) {
+                    Qn.question_list.push({
+                        "quId": questionList[i].quId,
+                        "qnId":this.questionnaire[0].qnId,
+                        "qTitle": questionList[i].qTitle,
+                        "optionType": questionList[i].optionType,
+                        "necessary": questionList[i].necessary,
+                        "option": questionList[i].option
+                    });
+                }
+                console.log(Qn)
+                fetch(url, {
+                method: "POST",
+                body: JSON.stringify(Qn),
+                headers: new Headers({
+                "Content-Type": "application/json",
+                }),
+            })
+            .then((res) => res.json())
+            .then((response) => {
+                console.log(response);
+                alert(response.rtncode)
+            })
+            .catch((error) => console.error("Error:", error));
+                return;
+            }
+            var url = "http://localhost:8081/api/quiz/create";
+            var Qn = {
+                "questionnaire": {
+                "title": this.questionnaire[0].title,
+                "description":this.questionnaire[0].description,
+                "published":true,
+                "startDate": this.questionnaire[0].startDate,
+                "endDate": this.questionnaire[0].endDate
+            },
+            "question_list": []
+            };   
+                    
+            for (let i = 0; i < this.questionList.length; i++) {
+                Qn.question_list.push({
+                "quId": questionList[i].quId,
+                "qTitle": questionList[i].qTitle,
+                "optionType": questionList[i].optionType,
+                "necessary": questionList[i].necessary,
+                "option": questionList[i].option
+                });
+            }
+            console.log(Qn)
+            fetch(url, {
+                method: "POST",
+                body: JSON.stringify(Qn),
+                headers: new Headers({
+                "Content-Type": "application/json",
+                }),
+            })
+            .then((res) => res.json())
+            .then((response) => {
+                console.log(response);
+                alert(response.rtncode)
+                this.$router.push('Questionnaire')
+            })
+            .catch((error) => console.error("Error:", error));
+            return
+            },
+         //取得questionList
+        getQuestion() {
+                console.log("fetch裡的qnId是:"+this.questionnaire[0].qnId)
+                const url = 'http://localhost:8081/api/quiz/searchQuestionList';
+                const queryParams = new URLSearchParams({
+                    qnId: this.questionnaire[0].qnId
+                });
+                const urlWithParams = `${url}?${queryParams}`;
+    
+                fetch(urlWithParams, {
+                    method: 'GET',
+                    headers: {
+                        "Accept": "application/json", // 指定接受的回應類型
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    //將 data 添加到 quList
+                    // console.log(data)
+                    this.questionList = data.questionList;
+                    console.log("下面是fetch的question")
+                    console.log( this.questionList);
+                })
+                .catch(error => console.error('Error:', error));
+            
+            },
          //倒序填寫資料
         uniqueUsers() {
             const uniqueUsers = [];
@@ -679,6 +786,7 @@ export default{
                     <td v-else-if="quiz.questionnaire.published==true"  style="cursor: not-allowed;">{{ quiz.questionnaire.title }} </td>
                     <td v-if=" quiz.questionnaire.published == true && nowDate < quiz.questionnaire.startDate || quiz.questionnaire.published == false && nowDate < quiz.questionnaire.startDate">尚未開始</td>
                     <td v-if="quiz.questionnaire.endDate < nowDate ">已結束</td>
+                    <td v-else-if="quiz.questionnaire.startDate <= nowDate && nowDate <= quiz.questionnaire.endDate && quiz.questionnaire.published == false">進行中(未發佈)</td>
                     <td v-else-if="quiz.questionnaire.startDate <= nowDate && nowDate <= quiz.questionnaire.endDate ">進行中</td>
                     <td>{{ quiz.questionnaire.startDate }}</td>
                     <td>{{ quiz.questionnaire.endDate }}</td>
@@ -1269,7 +1377,7 @@ export default{
                 width: 100%;
                 display: flex;
                 justify-content: center;
-                padding: 1%;
+                padding-bottom: 1%;
                 border-radius: 0 0 10px 10px;
                 button{
                     padding: 10px;
